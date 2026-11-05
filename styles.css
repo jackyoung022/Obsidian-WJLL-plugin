@@ -1938,3 +1938,6 @@ body.theme-dark .dragon-scroll-home .ll-seal { color: #F1EADF; }
 /* Arrow controls removed: the paper begins immediately below the child title. */
 .dragon-scroll-home .ll-volume-head { grid-template-columns: minmax(0, 1fr) auto; }
 .dragon-scroll-home .ll-inline-panel .ll-volume-head { display: none; }
+
+/* Directory indentation is data-driven and remains theme-overridable. */
+.ll-directory-settings .ll-directory-child { margin-inline-start: calc(var(--ll-setting-depth, 0) * 16px); }

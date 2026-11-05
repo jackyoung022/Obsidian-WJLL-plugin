@@ -179,7 +179,7 @@ class DragonScrollHomeView extends ItemView {
     this.sections = [];
     this.generation = 0;
     this.searchQuery = "";
-    this.suppressNextPageClick = false;
+    this.suppressClickUntil = 0;
     this.dragState = null;
     this.expandedChildren = new Map();
     this.searchClosedChildren = new Set();
@@ -609,7 +609,7 @@ class DragonScrollHomeView extends ItemView {
         button.querySelector(".ll-child-toggle").textContent = expanded ? "收" : "展";
         panel.hidden = !expanded;
         if (expanded && !panel.firstElementChild) panel.append(this.buildRoll(child, group, () => {
-          if (this.suppressNextPageClick) return;
+          if (Date.now() < this.suppressClickUntil) return;
           if (this.query) this.searchClosedChildren.add(child.path);
           else this.expandedChildren.delete(section.path);
           this.touchPagePath = "";
@@ -629,7 +629,7 @@ class DragonScrollHomeView extends ItemView {
       }
     };
     for (const { child, button } of entries) button.onclick = () => {
-      if (this.suppressNextPageClick) return;
+      if (Date.now() < this.suppressClickUntil) return;
       if (this.query) {
         if (this.searchClosedChildren.has(child.path)) this.searchClosedChildren.delete(child.path);
         else this.searchClosedChildren.add(child.path);
@@ -663,7 +663,7 @@ class DragonScrollHomeView extends ItemView {
     if (page.originLabel) reveal.append(createElement("span", "ll-page-origin", page.originLabel));
     button.append(title, reveal);
     button.addEventListener("click", (event) => {
-      if (this.suppressNextPageClick) return;
+      if (Date.now() < this.suppressClickUntil) return;
       if (window.matchMedia?.("(hover: none)").matches && this.touchPagePath !== page.path) {
         this.contentEl.querySelectorAll(".is-open-page").forEach((el) => el.classList.remove("is-open-page"));
         this.touchPagePath = page.path;
@@ -698,7 +698,7 @@ class DragonScrollHomeView extends ItemView {
     });
     shell.querySelectorAll(".ll-index-item").forEach((button) => {
       button.addEventListener("click", () => {
-        const target = document.getElementById(button.dataset.target);
+        const target = shell.querySelector(`#${button.dataset.target}`);
         target?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
@@ -706,7 +706,8 @@ class DragonScrollHomeView extends ItemView {
       if (!event.target.closest(".ll-page-shell")) {
         this.touchPagePath = "";
         shell.querySelectorAll(".is-open-page").forEach((el) => el.classList.remove("is-open-page"));
-        if (document.activeElement?.matches(".ll-page")) document.activeElement.blur();
+        const active = this.contentEl.ownerDocument.activeElement;
+        if (active?.matches(".ll-page")) active.blur();
       }
     });
   }
@@ -728,8 +729,7 @@ class DragonScrollHomeView extends ItemView {
     });
     const endDrag = () => {
       if (drag?.moved) {
-        this.suppressNextPageClick = true;
-        window.setTimeout(() => { this.suppressNextPageClick = false; }, 150);
+        this.suppressClickUntil = Date.now() + 150;
       }
       track.classList.remove("is-dragging");
       drag = null;
@@ -788,7 +788,6 @@ class DragonScrollHomeSettingTab extends PluginSettingTab {
     const expanded = new Set([...containerEl.querySelectorAll("details[data-parent-path][open]")].map((el) => el.dataset.parentPath));
     containerEl.empty();
     containerEl.classList.add("ll-directory-settings");
-    containerEl.createEl("h2", { text: "龙鳞首页" });
     containerEl.createEl("p", {
       text: "首页会自动读取所有根文件夹（排除 img）中的 Markdown 书页。",
       cls: "setting-item-description",
@@ -802,7 +801,7 @@ class DragonScrollHomeSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }),
       );
-    containerEl.createEl("h3", { text: "显示的目录" });
+    new Setting(containerEl).setName("显示的目录").setHeading();
     containerEl.createEl("p", { text: "关闭目录后，其所有子目录也会从首页和搜索中隐藏；展开“子目录”可单独设置。img 始终排除。", cls: "setting-item-description" });
     const folders = [];
     const collect = (parent, depth = 0) => {
@@ -817,7 +816,7 @@ class DragonScrollHomeSettingTab extends PluginSettingTab {
       const row = new Setting(target).setName(folder.name).setDesc(depth === 0 ? "根目录" : `${folder.path}${blocked ? "（父目录已隐藏）" : ""}`);
       row.settingEl.dataset.folderPath = folder.path;
       row.settingEl.classList.add(depth === 0 ? "ll-directory-parent" : "ll-directory-child");
-      row.settingEl.style.marginInlineStart = `${Math.max(0, depth - 1) * 16}px`;
+      row.settingEl.style.setProperty("--ll-setting-depth", String(Math.max(0, depth - 1)));
       row.addToggle((toggle) => toggle.setValue(!hidden.includes(folder.path)).setDisabled(blocked).onChange(async (visible) => {
         const values = new Set(this.plugin.settings.hiddenFolders || []);
         if (visible) values.delete(folder.path); else values.add(folder.path);
@@ -858,7 +857,10 @@ class DragonScrollHomeSettingTab extends PluginSettingTab {
 
 class DragonScrollHomePlugin extends Plugin {
   async onload() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.unloaded = false;
+    const saved = await this.loadData();
+    if (this.unloaded) return;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     this.settings.hiddenFolders = Array.isArray(this.settings.hiddenFolders) ? this.settings.hiddenFolders.filter((path) => typeof path === "string") : [];
     this.summaryCache = new Map();
     this.refreshTimer = null;
@@ -868,14 +870,14 @@ class DragonScrollHomePlugin extends Plugin {
       void this.activateView();
     });
     this.addCommand({
-      id: "open-dragon-scroll-home",
+      id: "open-home",
       name: "打开龙鳞首页",
       callback: () => {
         void this.activateView();
       },
     });
     this.addCommand({
-      id: "refresh-dragon-scroll-home",
+      id: "refresh-home",
       name: "重整龙鳞首页",
       callback: () => {
         this.clearSummaryCache();
@@ -885,19 +887,10 @@ class DragonScrollHomePlugin extends Plugin {
     this.addSettingTab(new DragonScrollHomeSettingTab(this.app, this));
     this.registerVaultEvents();
     this.app.workspace.onLayoutReady(() => {
-      if (this.settings.openOnStartup && !this.getHomeViews().length) {
-        window.setTimeout(() => {
-          if (this.settings.openOnStartup && !this.getHomeViews().length) {
-            void this.activateView();
-          }
-        }, 650);
-      }
-    });
-    window.setTimeout(() => {
-      if (this.settings.openOnStartup && !this.getHomeViews().length) {
+      if (!this.unloaded && this.settings.openOnStartup && !this.getHomeViews().length) {
         void this.activateView();
       }
-    }, 1600);
+    });
   }
 
   async saveSettings() {
@@ -959,8 +952,9 @@ class DragonScrollHomePlugin extends Plugin {
   }
 
   onunload() {
+    this.unloaded = true;
     window.clearTimeout(this.refreshTimer);
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
+    this.summaryCache?.clear();
   }
 }
 

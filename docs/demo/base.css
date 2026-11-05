@@ -32,3 +32,5 @@ button { font: inherit; white-space: nowrap; }
 .setting-item-control input:checked::after { left: 21px; }
 .setting-item-control input:disabled { opacity: .4; }
 .setting-item-control button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); color: var(--text-normal); padding: 7px 15px; border-radius: 5px; }
+
+.setting-item-heading .setting-item-name { font-size: 21px; font-weight: 600; }

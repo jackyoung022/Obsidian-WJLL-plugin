@@ -41,6 +41,7 @@ class Setting {
   }
   setName(text) { this.nameEl.textContent = text; return this; }
   setDesc(text) { this.descEl.textContent = text; return this; }
+  setHeading() { this.settingEl.classList.add("setting-item-heading"); return this; }
   addToggle(configure) {
     const input = this.controls.createEl('input');
     input.type = 'checkbox';

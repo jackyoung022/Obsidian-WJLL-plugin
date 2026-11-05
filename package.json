@@ -1,6 +1,6 @@
 {
   "name": "obsidian-wjll-plugin",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "private": true,
   "description": "万卷龙鳞：以龙鳞装书卷浏览 Obsidian 笔记库的本地首页插件。",
   "license": "MIT",
@@ -14,5 +14,7 @@
     "test": "node scripts/check.mjs",
     "package": "python3 scripts/package.py"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

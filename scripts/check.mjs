@@ -11,6 +11,8 @@ const pkg = JSON.parse(read('package.json'));
 const versions = JSON.parse(read('versions.json'));
 assert.equal(manifest.id, 'dragon-scroll-home');
 assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+assert.match(manifest.name, /^[A-Za-z0-9 -]+$/, 'Community directory names must use Basic Latin');
+assert.ok(manifest.description.length <= 250 && manifest.description.endsWith('.'));
 assert.equal(manifest.version, pkg.version);
 assert.equal(versions[manifest.version], manifest.minAppVersion);
 assert.equal(pkg.license, 'MIT');
@@ -18,6 +20,7 @@ assert.equal(typeof manifest.isDesktopOnly, 'boolean');
 assert.match(read('LICENSE'), /^MIT License/);
 assert.match(read('LICENSE'), /Copyright \(c\) 2026 Jack \(jackyoung022\)/);
 execFileSync(process.execPath, ['--check', path.join(root, 'main.js')]);
+execFileSync(process.execPath, [path.join(root, 'scripts/check-lifecycle.mjs')], { stdio: 'inherit' });
 for (const name of ['main.js', 'styles.css', 'manifest.json', 'README.md', 'LICENSE']) {
   assert.ok(fs.statSync(path.join(root, name)).size > 0, `${name} is empty`);
 }
