@@ -1,0 +1,34 @@
+/* Minimal host styles for screenshots; these are not plugin dependencies. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  --background-primary: #F8F3E9; --background-secondary: #EDE6D9; --background-modifier-border: #D8CDBD;
+  --text-normal: #302A24; --text-muted: #6E6358; --text-accent: #8C2F2D;
+  --font-interface: -apple-system, "PingFang SC", sans-serif;
+  background: var(--background-primary); color: var(--text-normal); font: 15px/1.6 var(--font-interface);
+  overflow: hidden;
+}
+body.theme-dark {
+  --background-primary: #2B3744; --background-secondary: #26313D; --background-modifier-border: #435363;
+  --text-normal: #F1EADF; --text-muted: #ADB7BF; --text-accent: #E0A18D;
+}
+[hidden] { display: none !important; }
+button { font: inherit; white-space: nowrap; }
+#home { width: 100%; height: 100%; }
+#settings { width: min(100%, 1000px); height: 100%; margin: auto; padding: 30px 40px; overflow-y: auto; }
+#settings h2 { font-size: 27px; margin: 0 0 12px; }
+#settings h3 { margin: 30px 0 12px; font-size: 21px; }
+.setting-item { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; }
+.setting-item-info { flex: 1; min-width: 0; }
+.setting-item-name { font-size: 16px; }
+.setting-item-description { color: var(--text-muted); font-size: 13px; margin-top: 5px; }
+.setting-item-control { flex: none; }
+.setting-item-control input {
+  appearance: none; display: block; position: relative; width: 42px; height: 24px; margin: 0;
+  border-radius: 20px; background: var(--background-modifier-border); cursor: pointer;
+}
+.setting-item-control input::after { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+.setting-item-control input:checked { background: var(--text-accent); }
+.setting-item-control input:checked::after { left: 21px; }
+.setting-item-control input:disabled { opacity: .4; }
+.setting-item-control button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); color: var(--text-normal); padding: 7px 15px; border-radius: 5px; }
